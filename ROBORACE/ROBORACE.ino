@@ -6,6 +6,7 @@ Servo servo;
 int pingPin1 = IN1;
 int pingPin2 = IN2;
 int pingPin3 = IN3;
+int IK = IN4;
 
 //int MAS[9];
 //int MASS[9];
@@ -19,7 +20,7 @@ const int motor_number2 = 2;
 //long duration2, inches2, cm2;
 
 float Kp = 0.27;
-float Ki = 0.015;
+float Ki = 0.02;
 float Kd = 0.58;
 
 int E = 0;
@@ -30,7 +31,7 @@ int P = 0;
 long long I = 0;
 int D = 0;
 
-const int NUM_READ = 3;
+const int NUM_READ = 5;
 
 byte idx1 = 0;                // индекс
 float valArray1[NUM_READ];    // массив
@@ -47,19 +48,25 @@ void setup() {
   Serial.begin(9600);
   Trackduino.setup();
   servo.attach(OUT1);
+  for (int i = 0; i < NUM_READ; ++i) {
+    C1 = constrain(FILT1(cm(pingPin1)), 10, 100);
+    C2 = constrain(FILT2(cm(pingPin2)), 10, 100);
+    C3 = FILT3(cm(pingPin3));
+  }
+  pinMode(IK, INPUT);
 }
 void loop() {
   C1 = constrain(FILT1(cm(pingPin1)), 10, 100);
   C2 = constrain(FILT2(cm(pingPin2)), 10, 100);
   C3 = FILT3(cm(pingPin3));
-//  forward(90);
+  //  forward(90);
   backward(70);
-//  pid();
-  if(C1 > 30 and C2 > 30){
+  //  pid();
+  if (C1 > 30 and C2 > 30) {
     servo.write(kservo);
     forward(90);
   }
-  else{
+  else {
     pid();
   }
 }
@@ -77,31 +84,33 @@ int cm(int a) {
 }
 
 void pid() {
-//  if (C1 > 40 and C2 > 40) {
-    E = C1 - C2;
+  //  if (C1 > 40 and C2 > 40) {
+  E = C1 - C2;
 
-    Serial.print(C2);
-    Serial.print(" ");
-    Serial.print(C1);
-    Serial.print(" ");
-    Serial.println(C3);
+  //  Serial.print(C2);
+  //  Serial.print(" ");
+  //  Serial.print(C1);
+  //  Serial.print(" ");
+  //  Serial.println(C3);
 
-    P = E;
-    I = (I * 0.95) + E;
-    D = Eold - E;
-    Eold = E;
+  P = E;
+  I = (I * 0.95) + E;
+  D = Eold - E;
+  Eold = E;
 
-    PID = P * Kp + I * Ki + D * Kd;
-    int A = kservo + PID;
-    A = constrain(A, 90, 150);
-    servo.write(A);
+  PID = P * Kp + I * Ki + D * Kd;
+  int A = kservo + PID;
+  A = constrain(A, 90, 150);
+  servo.write(A);
 
-    EGOR = PID * 1;
+  EGOR = PID * 0.5;
+//  Serial.println(EGOR);
 }
 
 void backward(int s) {
-  if (C3 < 10 or C3 > 400) {
-    while (C3 < 25 or C3 > 400) {
+//  Serial.println(C3);
+  if ((analogRead(IK) > 180) or C3 < 30 ) {
+    while ((C3 < 40 or C3 > 300) or ((C1 < 5 or C1 > 300)  and C3 < 20) or ((C2 < 5 or C2 > 300) and C3 < 20)) {
       C3 = FILT3(cm(pingPin3));
       servo.write(kservo);
       Trackduino.motor(motor_number1, -s + 30);
@@ -140,9 +149,14 @@ void backward(int s) {
 }
 void forward(int s) {
   int T = constrain(C3, 0, 80);
-  T = map(T, 8, 80, 50, s);
-  Trackduino.motor(motor_number1, T + EGOR);
-  Trackduino.motor(motor_number2, T - EGOR);
+  T += (constrain(C1, 0, 80) + constrain(C2, 0, 80)) * 0.5;
+  T /= 2;
+  T = map(T, 20, 80, 20, s); 
+  Trackduino.motor(motor_number1, T);
+  Trackduino.motor(motor_number2, T);
+//  Serial.print(T+EGOR);
+//  Serial.print('\t');
+//  Serial.println(T-EGOR);
 }
 
 float FILT1(float newVal) {
