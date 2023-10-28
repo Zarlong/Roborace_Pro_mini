@@ -33,6 +33,9 @@ int D = 0;
 
 const int NUM_READ = 5;
 
+unsigned long long pidt = 0;
+int pidold = 0;
+
 byte idx1 = 0;                // индекс
 float valArray1[NUM_READ];    // массив
 
@@ -48,34 +51,45 @@ void setup() {
   Serial.begin(9600);
   Trackduino.setup();
   servo.attach(OUT1);
-  for (int i = 0; i < NUM_READ; ++i) {
-    C1 = constrain(FILT1(cm(pingPin1)), 10, 100);
-    C2 = constrain(FILT2(cm(pingPin2)), 10, 100);
-    C3 = FILT3(cm(pingPin3));
-  }
-  pinMode(IK, INPUT);
+//  for (int i = 0; i < NUM_READ; ++i) {
+//    C1 = constrain(FILT1(cm(pingPin1)), 10, 100);
+//    C2 = constrain(FILT2(cm(pingPin2)), 10, 100);
+//    C3 = FILT3(cm(pingPin3));
+//  }
+//  pinMode(IK, INPUT);
 }
 void loop() {
-  C1 = constrain(FILT1(cm(pingPin1)), 10, 100);
-  C2 = constrain(FILT2(cm(pingPin2)), 10, 100);
-  C3 = FILT3(cm(pingPin3));
+  C1 = constrain(cm(pingPin1), 6, 100);
+  C2 = constrain(cm(pingPin2), 6, 100);
+  C3 = cm(pingPin3);
+
+//  C1 = constrain(FILT1(cm(pingPin1)), 6, 100);
+//  C2 = constrain(FILT2(cm(pingPin2)), 6, 100);
+//  C3 = FILT3(cm(pingPin3));
   //  forward(90);
-  backward(70);
-  //  pid();
-  if (C1 > 30 and C2 > 30) {
-    servo.write(kservo);
-    forward(90);
-  }
-  else {
-    pid();
-  }
+  Serial.print(C1);
+  Serial.print('\t');
+  Serial.print(C2);
+  Serial.print('\t');
+  Serial.println(C3);
+//  backward(70);
+//  backward_err();
+//  //  pid();
+//  if (C1 > 35 and C2 > 35) {
+//    servo.write(kservo);
+//    forward(90);
+//  }
+//  else {
+//    pid();
+////    forward(90);
+//  }
 }
 int cm(int a) {
   pinMode(a, OUTPUT);
   digitalWrite(a, LOW);
-  delayMicroseconds(2);
-  digitalWrite(a, HIGH);
   delayMicroseconds(5);
+  digitalWrite(a, HIGH);
+  delayMicroseconds(10);
   digitalWrite(a, LOW);
   pinMode(a, INPUT);
   int duration = pulseIn(a, HIGH);
@@ -104,12 +118,40 @@ void pid() {
   servo.write(A);
 
   EGOR = PID * 0.5;
-//  Serial.println(EGOR);
+
+}
+
+void backward_err() {
+  if (abs(pidold - PID) < 10) {
+    if (millis() - pidt > 5000) {
+      C3 = FILT3(cm(pingPin3));
+      servo.write(kservo);
+      Trackduino.motor(motor_number1, -60);
+      Trackduino.motor(motor_number2,  -60);
+      delay(1000);
+      if (I < 0) {
+        servo.write(90);
+        Trackduino.motor(motor_number1, 70);
+        Trackduino.motor(motor_number2, 70);
+        delay(500);
+      }
+      else {
+        servo.write(150);
+        Trackduino.motor(motor_number1, 70);
+        Trackduino.motor(motor_number2, 70);
+        delay(500);
+      }
+      pidt = millis();
+    }
+  }
+  else {
+    pidt = millis();
+  }
 }
 
 void backward(int s) {
-//  Serial.println(C3);
-  if ((analogRead(IK) > 180) or C3 < 30 ) {
+  //  Serial.println(C3);
+  if (C3 < 30 ) {
     while ((C3 < 40 or C3 > 300) or ((C1 < 5 or C1 > 300)  and C3 < 20) or ((C2 < 5 or C2 > 300) and C3 < 20)) {
       C3 = FILT3(cm(pingPin3));
       servo.write(kservo);
@@ -129,34 +171,17 @@ void backward(int s) {
       delay(500);
     }
   }
-  //    if ((C1 - C2) > 0) {
-  //      Trackduino.motor(motor_number1, s);
-  //      Trackduino.motor(motor_number2, s-30);
-  //      delay(1000);
-  //      Trackduino.motor(motor_number1, s);
-  //      Trackduino.motor(motor_number2, s);
-  //      delay(2000);
-  //    }
-  //    else {
-  //      Trackduino.motor(motor_number1, s-30);
-  //      Trackduino.motor(motor_number2, s);
-  //      delay(1000);
-  //      Trackduino.motor(motor_number1, s);
-  //      Trackduino.motor(motor_number2, s);
-  //      delay(2000);
-  //    }
-  //  }
 }
 void forward(int s) {
   int T = constrain(C3, 0, 80);
-  T += (constrain(C1, 0, 80) + constrain(C2, 0, 80)) * 0.5;
+  T += (constrain(C1, 0, 80) + constrain(C2, 0, 80)) * 0.8;
   T /= 2;
-  T = map(T, 20, 80, 20, s); 
+  T = map(T, 20, 80, 0, s);
   Trackduino.motor(motor_number1, T);
   Trackduino.motor(motor_number2, T);
-//  Serial.print(T+EGOR);
-//  Serial.print('\t');
-//  Serial.println(T-EGOR);
+  //  Serial.print(T+EGOR);
+  //  Serial.print('\t');
+  //  Serial.println(T-EGOR);
 }
 
 float FILT1(float newVal) {
