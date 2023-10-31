@@ -11,15 +11,15 @@ int IK = IN4;
 int C1 = 0;
 int C2 = 0;
 int C3 = 0;
-int kservo = 120;
+int kservo = 117;
 const int motor_number1 = 1;
 const int motor_number2 = 2;
 
-float Kp = 0.6;
-float Ki = 0.015;
-float Kd = 0;
+float Kp = 0.4;    // 3
+float Ki = 0.015;  // 0.015
+float Kd = 0.2;    // 0.2
 
-int L = 30;
+int L = 60;
 
 int F = 0;
 
@@ -31,7 +31,7 @@ int P = 0;
 long long I = 0;
 int D = 0;
 
-const int NUM_READ = 4;
+const int NUM_READ = 9;
 
 unsigned long long pidt = 0;
 int pidold = 0;
@@ -54,6 +54,10 @@ void setup() {
     C2 = constrain(findMedianN2(cm(pingPin2)), 4, 200);
     C3 = constrain(findMedianN3(cm(pingPin3)), 4, 200);
   }
+  // servo.write(85);
+  // delay(1000);
+  // servo.write(145);
+  // delay(1000);
   //  pinMode(IK, INPUT);
 }
 void loop() {
@@ -81,13 +85,13 @@ void loop() {
   //    pid();
   if (C1 > L and C2 > L) {
     servo.write(kservo);
-    forward(95);
+    forward(60);
   } else {
     pid();
-    forward(80);
+    forward(60);
   }
   // forward(80);
-  backward(60);
+  backward(50);
   backward_err();
 
   C1 = abs(constrain(findMedianN1(cm(pingPin1)), 4, 200));
@@ -109,20 +113,19 @@ int cm(int a) {
 }
 
 void pid() {
-  // if (C1 > L) {
+  // if (C1 > L and C2 < L) {
   //   F = 1;
   //   E = C2 - L;
   //   Trackduino.RGB_off();
   //   Trackduino.RGB_red();
-  // } else if (C2 > L) {
+  // } else if (C2 > L and C1 < L) {
   //   F = 2;
-  //   E = C1 - L;
+  //   E = L - C1;
   //   Trackduino.RGB_off();
   //   Trackduino.RGB_green();
   // } else if (C2 > L and C1 > L) {
   //   F = 3;
-  //   servo.write(kservo);
-  //   forward(70);
+  //   E = 0;
   // } else if (C1 < L and C2 < L){
   //   F = 4;
   //   E = C1 - C2;
@@ -132,13 +135,13 @@ void pid() {
 
   E = C2 - C1;
   P = E;
-  I = (I * 0.90) + E;
+  I = (I * 0.93) + E;
   D = Eold - E;
   Eold = E;
 
   PID = P * Kp + I * Ki + D * Kd;
   int A = kservo + PID;
-  A = constrain(A, 95, 145);
+  A = map(A, 70, 170, 85, 145);
   servo.write(A);
   // EGOR = PID * 0.5;
   // Serial.print(C1);
@@ -161,7 +164,7 @@ void backward_err() {
       Trackduino.motor(motor_number1, -60);
       Trackduino.motor(motor_number2, -60);
       delay(1000);
-      if (I < 0) {
+      if (Eold < 0) {
         servo.write(90);
         Trackduino.motor(motor_number1, 70);
         Trackduino.motor(motor_number2, 70);
@@ -182,33 +185,49 @@ void backward_err() {
 void backward(int s) {
   //  Serial.println(C3);
   if (C3 < 30) {
-    while (C3 < 40 or C3 > 300) {            //) or ((C1 < 5 or C1 > 300) and C3 < 20) or ((C2 < 5 or C2 > 300) and C3 < 20)
+    while (C3 < 40) {                        //) or ((C1 < 5 or C1 > 300) and C3 < 20) or ((C2 < 5 or C2 > 300) and C3 < 20)
       C3 = abs(findMedianN3(cm(pingPin3)));  //ФИЛЬТР
-      servo.write(kservo);
-      Trackduino.motor(motor_number1, -s + 30);
-      Trackduino.motor(motor_number2, -s + 30);
+      // servo.write(kservo);
+      if (Eold > 0) {
+        servo.write(95);
+      } else {
+        servo.write(145);
+      }
+      Trackduino.motor(motor_number1, -s);
+      Trackduino.motor(motor_number2, -s);
     }
-    if (I < 0) {
-      servo.write(95);
-      Trackduino.motor(motor_number1, s);
-      Trackduino.motor(motor_number2, s);
-      delay(400);
-    } else {
-      servo.write(145);
-      Trackduino.motor(motor_number1, s);
-      Trackduino.motor(motor_number2, s);
-      delay(400);
-    }
+    //   servo.write(95);
+    //   Trackduino.motor(motor_number1, s);
+    //   Trackduino.motor(motor_number2, s);
+    //   delay(400);
+    // } else {
+    //   servo.write(145);
+    //   Trackduino.motor(motor_number1, s);
+    //   Trackduino.motor(motor_number2, s);
+    //   delay(400);
+    // }
   }
 }
 void forward(int s) {
-  int T = -constrain(C3, 0, 80) * 0.5;
-  T += (abs(constrain(findMedianN1(cm(pingPin1)), 4, 200)) + abs(constrain(findMedianN2(cm(pingPin2)), 4, 200))) * 0.5;
-  T /= 2;
-  T = map(T, 20, 80, -30, s);  // Поменял на -20 надо оттестить
-  Trackduino.motor(motor_number1, s + T);
-  Trackduino.motor(motor_number2, s + T);
-  Serial.println(s - T);
+  if (C1 > 100) {
+    // if (Eold > 0)
+    // pid();
+    servo.write(95);
+    // }
+  } 
+  if (C2 > 100) {
+    // if (Eold > 0)
+    // pid();
+    servo.write(145);
+  }
+
+  // int T = -constrain(C3, 0, 80) * 0.2;
+  // T += (abs(constrain(findMedianN1(cm(pingPin1)), 4, 200)) + abs(constrain(findMedianN2(cm(pingPin2)), 4, 200))) * 0.5;
+  // T /= 2;
+  // T = map(T, 20, 80, -30, s);  // Поменял на -20 надо оттестить
+  Trackduino.motor(motor_number1, s);
+  Trackduino.motor(motor_number2, s);
+  // Serial.println(s - T);
   //  Serial.print(T+EGOR);
   //  Serial.print('\t');
   //  Serial.println(T-EGOR);
@@ -240,7 +259,7 @@ int findMedianN1(int newVal1) {
       }
     }
   }
-  return buf1[2];
+  return buf1[4];
 }
 int findMedianN2(int newVal2) {
   static int buffer2[NUM_READ];  // статический буфер
@@ -259,7 +278,7 @@ int findMedianN2(int newVal2) {
       }
     }
   }
-  return buf2[2];
+  return buf2[4];
 }
 int findMedianN3(int newVal3) {
   static int buffer3[NUM_READ];  // статический буфер
@@ -278,5 +297,5 @@ int findMedianN3(int newVal3) {
       }
     }
   }
-  return buf3[2];
+  return buf3[4];
 }
