@@ -113,27 +113,27 @@ int cm(int a) {
 }
 
 void pid() {
-  // if (C1 > L and C2 < L) {
-  //   F = 1;
-  //   E = C2 - L;
-  //   Trackduino.RGB_off();
-  //   Trackduino.RGB_red();
-  // } else if (C2 > L and C1 < L) {
-  //   F = 2;
-  //   E = L - C1;
-  //   Trackduino.RGB_off();
-  //   Trackduino.RGB_green();
-  // } else if (C2 > L and C1 > L) {
-  //   F = 3;
-  //   E = 0;
-  // } else if (C1 < L and C2 < L){
-  //   F = 4;
-  //   E = C1 - C2;
-  //   Trackduino.RGB_off();
-  //   Trackduino.RGB_blue();
-  // }
+  if (C1 > L and C2 < L) {
+    F = 1;
+    E = -50; // СЕ -30 C2 -L
+    Trackduino.RGB_off();
+    Trackduino.RGB_red();
+  } else if (C2 > L and C1 < L) {
+    F = 2;
+    E = 50; //СЕ 30 L - C1
+    Trackduino.RGB_off();
+    Trackduino.RGB_green();
+  } else if (C2 > L and C1 > L) {
+    F = 3;
+    E = 0;
+  } else if (C1 < L and C2 < L){
+    F = 4;
+    E = C1 - C2;
+    Trackduino.RGB_off();
+    Trackduino.RGB_blue();
+  }
 
-  E = C2 - C1;
+  // E = C2 - C1;
   P = E;
   I = (I * 0.93) + E;
   D = Eold - E;
@@ -209,17 +209,17 @@ void backward(int s) {
   }
 }
 void forward(int s) {
-  if (C1 > 100) {
-    // if (Eold > 0)
-    // pid();
-    servo.write(95);
-    // }
-  } 
-  if (C2 > 100) {
-    // if (Eold > 0)
-    // pid();
-    servo.write(145);
-  }
+  // if (C1 > L) {
+  //   // if (Eold > 0)
+  //   // pid();
+  //   servo.write(95);
+  //   // }
+  // } 
+  // if (C2 > L) {
+  //   // if (Eold > 0)
+  //   // pid();
+  //   servo.write(145);
+  // }
 
   // int T = -constrain(C3, 0, 80) * 0.2;
   // T += (abs(constrain(findMedianN1(cm(pingPin1)), 4, 200)) + abs(constrain(findMedianN2(cm(pingPin2)), 4, 200))) * 0.5;
