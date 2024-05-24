@@ -129,6 +129,7 @@ int cm() {
 
 
 void pid() {
+<<<<<<< HEAD
   // if (C1 > L and C2 < L) {
   //   F = 1;
   //   E = C2 - L;
@@ -153,6 +154,29 @@ void pid() {
   // C3 = abs(constrain(cm(pingPin3), 6, 250));
 
   E = sha1() - sha2() + 30;
+=======
+  if (C1 > L and C2 < L) {
+    F = 1;
+    E = -50; // СЕ -30 C2 -L
+    Trackduino.RGB_off();
+    Trackduino.RGB_red();
+  } else if (C2 > L and C1 < L) {
+    F = 2;
+    E = 50; //СЕ 30 L - C1
+    Trackduino.RGB_off();
+    Trackduino.RGB_green();
+  } else if (C2 > L and C1 > L) {
+    F = 3;
+    E = 0;
+  } else if (C1 < L and C2 < L){
+    F = 4;
+    E = C1 - C2;
+    Trackduino.RGB_off();
+    Trackduino.RGB_blue();
+  }
+
+  // E = C2 - C1;
+>>>>>>> ec04900bb6c72cf4fd2c7304f47cdbcfcb2606b3
   P = E;
   // I = (I * 0.93) + E;
   D = Eold - E;
@@ -222,13 +246,22 @@ void backward(int s) {
   }
 }
 void forward(int s) {
+<<<<<<< HEAD
   // if (C1 > 100) {
+=======
+  // if (C1 > L) {
+>>>>>>> ec04900bb6c72cf4fd2c7304f47cdbcfcb2606b3
   //   // if (Eold > 0)
   //   // pid();
   //   servo.write(95);
   //   // }
+<<<<<<< HEAD
   // }
   // if (C2 > 100) {
+=======
+  // } 
+  // if (C2 > L) {
+>>>>>>> ec04900bb6c72cf4fd2c7304f47cdbcfcb2606b3
   //   // if (Eold > 0)
   //   // pid();
   //   servo.write(145);
